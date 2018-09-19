@@ -225,7 +225,7 @@ node_templates:
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
-  client_rourter_port:
+  client_router_port:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
