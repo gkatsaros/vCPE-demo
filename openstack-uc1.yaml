@@ -77,6 +77,9 @@ inputs:
     - start: 10.10.1.2
       end: 10.10.1.254
 
+  vyos_image:
+    default: e7904f9a-1e43-4d40-82fe-a211de234530
+
 dsl_definitions:
 
   openstack_config: &openstack_config
@@ -172,6 +175,20 @@ node_templates:
     - type: cloudify.openstack.port_connected_to_floating_ip
       target: client_fl_ip
 
+  orch_port_router:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: management_network
+    - type: cloudify.relationships.depends_on
+      target: management_subnet
+    - type: cloudify.openstack.port_connected_to_security_group
+      target: security_group
+    - type: cloudify.openstack.port_connected_to_floating_ip
+      target: router_fl_ip
+
   server_port:
     type: cloudify.openstack.nodes.Port
     properties:
@@ -184,7 +201,31 @@ node_templates:
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
+  server_router_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: server_network
+    - type: cloudify.relationships.depends_on
+      target: server_subnet
+    - type: cloudify.openstack.port_connected_to_security_group
+      target: security_group
+
   client_port:
+    type: cloudify.openstack.nodes.Port
+    properties:
+      openstack_config: *openstack_config
+    relationships:
+    - type: cloudify.relationships.contained_in
+      target: client_network
+    - type: cloudify.relationships.depends_on
+      target: client_subnet
+    - type: cloudify.openstack.port_connected_to_security_group
+      target: security_group
+
+  client_rourter_port:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
@@ -221,17 +262,25 @@ node_templates:
         floating_network_id: { get_input: floating-network-id }
     relationships:
 
-  http_web_server:
-    type: cloudify.nodes.WebServer
+  router_fl_ip:
+    type: cloudify.openstack.nodes.FloatingIP
     properties:
-      port: { get_input: webserver_port }
+      openstack_config: *openstack_config
+      floatingip:
+        floating_network_id: { get_input: floating-network-id }
     relationships:
-      - type: cloudify.relationships.contained_in
-        target: server_host
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start: scripts/start.sh
-        stop: scripts/stop.sh
+
+  #http_web_server:
+  #  type: cloudify.nodes.WebServer
+  #  properties:
+  #    port: { get_input: webserver_port }
+  #  relationships:
+  #    - type: cloudify.relationships.contained_in
+  #      target: server_host
+  #  interfaces:
+  #    cloudify.interfaces.lifecycle:
+  #      start: scripts/start.sh
+  #      stop: scripts/stop.sh
 
   server_host:
     type: cloudify.openstack.nodes.Server
@@ -309,6 +358,48 @@ node_templates:
       target: client_network
     - type: cloudify.openstack.server_connected_to_port
       target: client_port
+    - type: cloudify.relationships.depends_on
+      target: cloudify_host_cloud_config
+
+  
+  router_host:
+    type: cloudify.openstack.nodes.Server
+    properties:
+      openstack_config: *openstack_config
+      agent_config:
+        #network: { get_input: manager_network }
+        user: { get_input: agent_user }
+        install_method: init_script
+        port: 22
+        key: { get_input: agent_key_private }
+      server:
+        meta:
+          blueprint_version: v1
+        key_name: 'greg-key'
+        image: { get_input: image }
+        flavor: { get_input: flavor }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: openstack.nova_plugin.server.create
+          inputs:
+            args:
+              meta:
+                blueprint_version: v1
+              image: { get_input: vyos_image }
+              flavor: { get_input: flavor }
+              userdata: { get_attribute: [ cloudify_host_cloud_config, cloud_config ] }
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: management_network
+    - type: cloudify.openstack.server_connected_to_port
+      target: orch_port_router
+    - type: cloudify.relationships.depends_on
+      target: client_network
+    - type: cloudify.openstack.server_connected_to_port
+      target: client_router_port
+    - type: cloudify.openstack.server_connected_to_port
+      target: server_router_port
     - type: cloudify.relationships.depends_on
       target: cloudify_host_cloud_config
 
