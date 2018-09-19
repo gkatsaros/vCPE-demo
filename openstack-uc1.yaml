@@ -4,6 +4,7 @@ imports:
   - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
   - plugin:cloudify-openstack-plugin
   - plugin:cloudify-utilities-plugin
+  - plugin:cloudify-fabric-plugin
 
 inputs:
 
@@ -151,6 +152,7 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
+
     relationships:
     - type: cloudify.relationships.contained_in
       target: management_network
@@ -193,6 +195,8 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
+      port:
+        allowed_address_pairs: '0.0.0.0/24'
     relationships:
     - type: cloudify.relationships.contained_in
       target: server_network
@@ -205,6 +209,8 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
+      port:
+        allowed_address_pairs: '0.0.0.0/24'
     relationships:
     - type: cloudify.relationships.contained_in
       target: server_network
@@ -217,6 +223,8 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
+      port:
+        allowed_address_pairs: '0.0.0.0/24'
     relationships:
     - type: cloudify.relationships.contained_in
       target: client_network
@@ -229,6 +237,8 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
+      port:
+        allowed_address_pairs: '0.0.0.0/24'
     relationships:
     - type: cloudify.relationships.contained_in
       target: client_network
@@ -369,7 +379,7 @@ node_templates:
       agent_config:
         #network: { get_input: manager_network }
         user: { get_input: agent_user }
-        install_method: init_script
+        install_method: none
         port: 22
         key: { get_input: agent_key_private }
       server:
