@@ -506,11 +506,11 @@ node_templates:
 outputs:
 
   server_public_endpoint:
-    description: The public ip address of the server PE
-    value:{ get_attribute: [server_fl_ip, floating_ip_address] }
+    description: 'The public ip address of the server PE'
+    value: { get_attribute: [server_fl_ip, floating_ip_address] }
   client_public_endpoint:
-    description: The ip address of the client CPE
+    description: 'The ip address of the client CPE'
     value: { get_attribute: [client_fl_ip, floating_ip_address] }
   router_public_endpoint:
-    description: The ip address of the router VNF
+    description: 'The ip address of the router VNF'
     value: { get_attribute: [router_fl_ip, floating_ip_address] }
