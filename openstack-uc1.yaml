@@ -477,6 +477,9 @@ node_templates:
          - 'export no_proxy=localhost,127.0.0.1,localaddress,192.168.100.15'
          - 'dhclient'
          - { concat: ['sudo route add -net ', {get_input: server_subnet_cidr},'  gw ', {get_attribute: [client_router_port, fixed_ip_address]} ]} 
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: client_router_port
 
   cloudify_host_cloud_config_server:
     type: cloudify.nodes.CloudInit.CloudConfig
@@ -495,6 +498,10 @@ node_templates:
          - 'export no_proxy=localhost,127.0.0.1,localaddress,192.168.100.15'
          - 'dhclient'
          - { concat: ['sudo route add -net ', {get_input: client_subnet_cidr},'  gw ', {get_attribute: [server_router_port, fixed_ip_address]} ]}
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: server_router_port
+
 
 outputs:
 
