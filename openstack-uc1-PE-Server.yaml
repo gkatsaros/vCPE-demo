@@ -66,7 +66,7 @@ node_templates:
     - type: cloudify.relationships.contained_in
       target: server_network
 
-    management_subnet:
+  management_subnet:
     type: cloudify.openstack.nodes.Subnet
     properties:
       openstack_config: *openstack_config
@@ -81,7 +81,6 @@ node_templates:
     type: cloudify.openstack.nodes.Port
     properties:
       openstack_config: *openstack_config
-
     relationships:
     - type: cloudify.relationships.contained_in
       target: management_network
@@ -196,8 +195,6 @@ node_templates:
          - 'export no_proxy=localhost,127.0.0.1,localaddress,192.168.100.15'
          - 'dhclient'
     relationships:
-    - type: cloudify.relationships.depends_on
-      target: server_router_port
 
 
 outputs:
