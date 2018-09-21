@@ -434,7 +434,12 @@ node_templates:
             inputs:
               commands:
               - touch /home/cumulus/cumulus_config
-              - echo 'eth1' >> /home/cumulus/cumulus_config
+              - echo 'Configuring cumulus static routing' >> /home/cumulus/cumulus_config
+              - net add interface swp1
+              - net add interface swp2
+              - {concat: ['net add interface swp1 ip address ', {get_attribute: [client_router_port, fixed_ip_address]}, '/24']}
+              - {concat: ['net add interface swp2 ip address ', {get_attribute: [server_router_port, fixed_ip_address]}, '/24']}
+              - net commit
               # if `use_sudo` is omitted, it defaults to `false`
               use_sudo: true
               fabric_env:
