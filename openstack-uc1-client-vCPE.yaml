@@ -8,14 +8,14 @@ imports:
 
 inputs:
 
-  #webserver_port:
-  #  description: The HTTP web server port
-  #  default: 8080
-
-
   server_subnet_cidr:
     default: 10.10.0.0/24
 
+  server_network:
+    default: 'a8a6bc41-90d3-481d-aaa5-f7c6118a8bd3'
+
+  server_host_name:
+    default: 'server_name'
   #server_subnet_allocation_pools:
   #  default:
   #  - start: 10.10.0.2
@@ -46,6 +46,8 @@ node_templates:
     type: cloudify.openstack.nodes.Network
     properties:
       openstack_config: *openstack_config
+      use_external_resource: true
+      resource_id: { get_input: server_network }
 
   client_network:
     type: cloudify.openstack.nodes.Network
@@ -59,19 +61,6 @@ node_templates:
       use_external_resource: true
       resource_id: { get_secret: orchestration-network-id }
     relationships:
-
-  server_subnet:
-    type: cloudify.openstack.nodes.Subnet
-    properties:
-      openstack_config: *openstack_config
-      subnet:
-        ip_version: 4
-        cidr: { get_input: server_subnet_cidr }
-        #dns_nameservers: [8.8.4.4, 8.8.8.8]
-        #allocation_pools: { get_input: server_subnet_allocation_pools }
-    relationships:
-    - type: cloudify.relationships.contained_in
-      target: server_network
 
   client_subnet:
     type: cloudify.openstack.nodes.Subnet
@@ -96,21 +85,6 @@ node_templates:
     - type: cloudify.relationships.contained_in
       target: management_network
 
-
-  orch_port_server:
-    type: cloudify.openstack.nodes.Port
-    properties:
-      openstack_config: *openstack_config
-
-    relationships:
-    - type: cloudify.relationships.contained_in
-      target: management_network
-    - type: cloudify.relationships.depends_on
-      target: management_subnet
-    - type: cloudify.openstack.port_connected_to_security_group
-      target: security_group
-    - type: cloudify.openstack.port_connected_to_floating_ip
-      target: server_fl_ip
 
   orch_port_client:
     type: cloudify.openstack.nodes.Port
@@ -140,20 +114,6 @@ node_templates:
     - type: cloudify.openstack.port_connected_to_floating_ip
       target: router_fl_ip
 
-  server_port:
-    type: cloudify.openstack.nodes.Port
-    properties:
-      openstack_config: *openstack_config
-      port:
-        allowed_address_pairs: 
-        - ip_address: '0.0.0.0/0'
-    relationships:
-    - type: cloudify.relationships.contained_in
-      target: server_network
-    - type: cloudify.relationships.depends_on
-      target: server_subnet
-    - type: cloudify.openstack.port_connected_to_security_group
-      target: security_group
 
   server_router_port:
     type: cloudify.openstack.nodes.Port
@@ -165,8 +125,6 @@ node_templates:
     relationships:
     - type: cloudify.relationships.contained_in
       target: server_network
-    - type: cloudify.relationships.depends_on
-      target: server_subnet
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
@@ -209,13 +167,6 @@ node_templates:
     relationships:
 
 
-  server_fl_ip:
-    type: cloudify.openstack.nodes.FloatingIP
-    properties:
-      openstack_config: *openstack_config
-      floatingip:
-        floating_network_id: { get_secret: floating-network-id }
-    relationships:
 
   client_fl_ip:
     type: cloudify.openstack.nodes.FloatingIP
@@ -252,39 +203,16 @@ node_templates:
       agent_config:
         #network: { get_input: manager_network }
         user: { get_secret: agent_user }
-        install_method: init_script
+        install_method: none
         port: 22
         key: { get_secret: agent_key_private }
-      server:
-        meta:
-          blueprint_version: v1
-        key_name: 'greg-key'
-        image: { get_secret: ubuntu_image }
-        flavor: { get_secret: medium_flavor }
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        create:
-          implementation: openstack.nova_plugin.server.create
-          inputs:
-            args:
-              meta:
-                blueprint_version: v1
-              image: { get_secret: ubuntu_image }
-              flavor: { get_secret: medium_flavor }
-              userdata: { get_attribute: [ cloudify_host_cloud_config_server, cloud_config ] }
+      use_external_resource: true
+      resource_id: { get_input: server_host_name }
     relationships:
     - type: cloudify.relationships.depends_on
-      target: management_network
-    - type: cloudify.openstack.server_connected_to_port
-      target: orch_port_server
-    - type: cloudify.relationships.depends_on
       target: server_network
-    - type: cloudify.openstack.server_connected_to_port
-      target: server_port
     - type: cloudify.relationships.depends_on
       target: cloudify_host_cloud_config_server
-    - type: cloudify.relationships.depends_on
-      target: router_host
 
 
   client_host:
@@ -456,9 +384,6 @@ node_templates:
 
 outputs:
 
-  server_public_endpoint:
-    description: 'The public ip address of the server PE'
-    value: { get_attribute: [server_fl_ip, floating_ip_address] }
   client_public_endpoint:
     description: 'The ip address of the client CPE'
     value: { get_attribute: [client_fl_ip, floating_ip_address] }
