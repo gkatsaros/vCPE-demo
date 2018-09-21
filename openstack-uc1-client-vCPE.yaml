@@ -337,7 +337,19 @@ node_templates:
               # if `use_sudo` is omitted, it defaults to `false`
               use_sudo: true
               fabric_env:
-                host_string: { get_attribute: [ server_host, ip ]}
+                host_string: { get_attribute: [ server_host, networks, orchestration-net,0 ]}
+                user: {get_secret: agent_user}
+                key: {get_secret: agent_key_private}
+                #sudo_prefix: 'mysudo -c'
+          stop:
+            implementation: fabric.fabric_plugin.tasks.run_commands
+            inputs:
+              commands:
+              - { concat: ['route del -net ', {get_input: client_subnet_cidr} ]}
+              # if `use_sudo` is omitted, it defaults to `false`
+              use_sudo: true
+              fabric_env:
+                host_string: { get_attribute: [ server_host, networks, orchestration-net,0 ]}
                 user: {get_secret: agent_user}
                 key: {get_secret: agent_key_private}
                 #sudo_prefix: 'mysudo -c'
@@ -381,6 +393,8 @@ node_templates:
     relationships:
     - type: cloudify.relationships.depends_on
       target: client_router_port
+    - type: cloudify.relationships.depends_on
+      target: router_host
 
 
 
