@@ -8,7 +8,7 @@ imports:
 
 inputs:
 
-  server_subnet_cidr:
+  PE_subnet_cidr:
     default: 10.10.0.0/24
 
   server_network:
@@ -211,8 +211,7 @@ node_templates:
     relationships:
     - type: cloudify.relationships.depends_on
       target: server_network
-    - type: cloudify.relationships.depends_on
-      target: cloudify_host_cloud_config_server
+
 
 
   client_host:
@@ -326,6 +325,29 @@ node_templates:
       target: router_host
 
 
+  PE_config:
+    type: cloudify.nodes.Root
+    interfaces:
+      cloudify.interfaces.lifecycle:
+          start:
+            implementation: fabric.fabric_plugin.tasks.run_commands
+            inputs:
+              commands:
+              - { concat: ['route add -net ', {get_input: client_subnet_cidr},'  gw ', {get_attribute: [server_router_port, fixed_ip_address]} ]}
+              # if `use_sudo` is omitted, it defaults to `false`
+              use_sudo: true
+              fabric_env:
+                host_string: { get_attribute: [ server_host, ip ]}
+                user: {get_secret: agent_user}
+                key: {get_secret: agent_key_private}
+                #sudo_prefix: 'mysudo -c'
+    relationships:
+    - type: cloudify.relationships.depends_on
+      target: server_host
+    - type: cloudify.relationships.depends_on
+      target: router_host
+
+
   cloudify_host_cloud_config_router:
     type: cloudify.nodes.CloudInit.CloudConfig
     properties:
@@ -355,31 +377,11 @@ node_templates:
          - 'export http_proxy=http://webproxy.lon.corp.services:80'
          - 'export no_proxy=localhost,127.0.0.1,localaddress,192.168.100.15'
          - 'dhclient'
-         - { concat: ['sudo route add -net ', {get_input: server_subnet_cidr},'  gw ', {get_attribute: [client_router_port, fixed_ip_address]} ]} 
+         - { concat: ['sudo route add -net ', {get_input: PE_subnet_cidr},'  gw ', {get_attribute: [client_router_port, fixed_ip_address]} ]} 
     relationships:
     - type: cloudify.relationships.depends_on
       target: client_router_port
 
-  cloudify_host_cloud_config_server:
-    type: cloudify.nodes.CloudInit.CloudConfig
-    properties:
-      resource_config:
-        manage_etc_hosts: True
-        users:
-          - name: { get_secret: agent_user }
-            shell: /bin/bash
-            sudo: ['ALL=(ALL) NOPASSWD:ALL']
-            ssh-authorized-keys:
-              - { get_secret: agent_key_public }
-        runcmd:
-         - 'export https_proxy=http://webproxy.lon.corp.services:80'
-         - 'export http_proxy=http://webproxy.lon.corp.services:80'
-         - 'export no_proxy=localhost,127.0.0.1,localaddress,192.168.100.15'
-         - 'dhclient'
-         - { concat: ['sudo route add -net ', {get_input: client_subnet_cidr},'  gw ', {get_attribute: [server_router_port, fixed_ip_address]} ]}
-    relationships:
-    - type: cloudify.relationships.depends_on
-      target: server_router_port
 
 
 outputs:
@@ -387,6 +389,9 @@ outputs:
   client_public_endpoint:
     description: 'The ip address of the client CPE'
     value: { get_attribute: [client_fl_ip, floating_ip_address] }
+  client_private_endpoint:
+    description: 'The private ip address of the client CPE'
+    value: { get_attribute: [client_port, fixed_ip_address] }
   router_public_endpoint:
     description: 'The ip address of the router VNF'
     value: { get_attribute: [router_fl_ip, floating_ip_address] }

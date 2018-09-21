@@ -16,15 +16,8 @@ inputs:
   server_subnet_cidr:
     default: 10.10.0.0/24
 
-  #server_subnet_allocation_pools:
-  #  default:
-  #  - start: 10.10.0.2
-  #    end: 10.10.0.254
-
-  #client_subnet_allocation_pools:
-  #  default:
-  #  - start: 10.10.1.2
-  #    end: 10.10.1.254
+  PE_name:
+    default: 'PE-server-name'
 
 
 dsl_definitions:
@@ -160,6 +153,7 @@ node_templates:
           implementation: openstack.nova_plugin.server.create
           inputs:
             args:
+              name: {get_input: PE_name}
               meta:
                 blueprint_version: v1
               image: { get_secret: ubuntu_image }
@@ -198,7 +192,12 @@ node_templates:
 
 
 outputs:
-
+  PE_server_name:
+    description: 'The VM name of the server PE'
+    value: { get_attribute: [server_host, external_name] }
+  PE_server_network:
+    description: 'The name of the server PE network'
+    value: { get_attribute: [server_network, external_name] }
   server_public_endpoint:
     description: 'The public ip address of the server PE'
     value: { get_attribute: [server_fl_ip, floating_ip_address] }
