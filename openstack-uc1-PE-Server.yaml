@@ -14,10 +14,10 @@ inputs:
 
 
   server_subnet_cidr:
-    default: 10.10.0.0/24
+    default: 10.10.10.0/24
 
   PE_name:
-    default: 'PE-server-name'
+    default: 'DTC_PE_demo'
 
 
 dsl_definitions:
@@ -36,6 +36,8 @@ node_templates:
     type: cloudify.openstack.nodes.Network
     properties:
       openstack_config: *openstack_config
+      network:
+        name: {concat: [{get_input: PE_name}, '_network']}
 
   
   management_network:

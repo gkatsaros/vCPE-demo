@@ -9,20 +9,21 @@ imports:
 inputs:
 
   PE_subnet_cidr:
-    default: 10.10.0.0/24
+    default: 10.10.10.0/24
 
-  server_network:
-    default: 'a8a6bc41-90d3-481d-aaa5-f7c6118a8bd3'
+#  server_network:
+#    default: 'a8a6bc41-90d3-481d-aaa5-f7c6118a8bd3'
 
-  server_host_name:
-    default: 'server_name'
+  PE_host:
+    default: 'DTC_PE_demo'
+
   #server_subnet_allocation_pools:
   #  default:
   #  - start: 10.10.0.2
   #    end: 10.10.0.254
 
   client_subnet_cidr:
-    default: 10.10.1.0/24
+    default: 12.12.12.0/24
 
   #client_subnet_allocation_pools:
   #  default:
@@ -47,7 +48,7 @@ node_templates:
     properties:
       openstack_config: *openstack_config
       use_external_resource: true
-      resource_id: { get_input: server_network }
+      resource_id: {concat:[{ get_input: PE_host}, '_network']}
 
   client_network:
     type: cloudify.openstack.nodes.Network
@@ -207,7 +208,7 @@ node_templates:
         port: 22
         key: { get_secret: agent_key_private }
       use_external_resource: true
-      resource_id: { get_input: server_host_name }
+      resource_id: { get_input: PE_host }
     relationships:
     - type: cloudify.relationships.depends_on
       target: server_network
