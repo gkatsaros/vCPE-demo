@@ -1,5 +1,7 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
+description: "This is an automation blueprint that deploys a simple vCPE in Openstack with a CE routing function."
+
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
   - plugin:cloudify-openstack-plugin

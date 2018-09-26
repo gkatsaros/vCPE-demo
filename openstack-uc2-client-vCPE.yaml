@@ -1,5 +1,7 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
+description: "This is an automation blueprint that deploys a simple vCPE in Openstack with a CE routing function and a simple firewall function."
+
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
   - plugin:cloudify-openstack-plugin
@@ -165,6 +167,8 @@ node_templates:
     relationships:
     - type: cloudify.relationships.contained_in
       target: firewall_network
+    - type: cloudify.relationships.depends_on
+      target: firewall_subnet
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
@@ -178,6 +182,8 @@ node_templates:
     relationships:
     - type: cloudify.relationships.contained_in
       target: firewall_network
+    - type: cloudify.relationships.depends_on
+      target: firewall_subnet
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
@@ -204,6 +210,8 @@ node_templates:
     relationships:
     - type: cloudify.relationships.contained_in
       target: firewall_network
+    - type: cloudify.relationships.depends_on
+      target: firewall_subnet
     - type: cloudify.openstack.port_connected_to_security_group
       target: security_group
 
